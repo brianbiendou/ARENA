@@ -36,4 +36,5 @@ desktop.ini
 
 # Env
 .env
+.env.*
 .env.local

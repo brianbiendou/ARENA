@@ -4,6 +4,7 @@ import Hub from "./pages/Hub.tsx";
 import Lobby from "./pages/Lobby.tsx";
 import Arena from "./pages/Arena.tsx";
 import Analysis from "./pages/Analysis.tsx";
+import Settings from "./pages/Settings.tsx";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="lobby/:experimentId" element={<Lobby />} />
         <Route path="arena" element={<Arena />} />
         <Route path="analysis/:runId" element={<Analysis />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   );

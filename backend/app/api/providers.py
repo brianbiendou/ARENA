@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
+
 from fastapi import APIRouter, HTTPException, Request
 
 from ..models.settings import ProviderType
@@ -35,7 +37,7 @@ async def list_models(provider_type: ProviderType, request: Request):
     if provider is None:
         raise HTTPException(404, f"Provider {provider_type.value} not available")
     models = await provider.list_models()
-    return [m.model_dump() for m in models]
+    return [asdict(m) for m in models]
 
 
 @router.post("/{provider_type}/test")

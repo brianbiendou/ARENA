@@ -113,7 +113,7 @@ class LoiDuGroupeExperiment(BaseExperiment):
             scenarios=list(self._SCENARIOS.values()),
             plot_twists=[
                 PlotTwist(id="rebellion", name="La Rébellion", description="Un sous-groupe refuse toutes les lois votées et propose de tout recommencer.", trigger_round=4, intensity=PlotTwistIntensity.STRONG),
-                PlotTwist(id="external_law", name="La Loi Extérieure", description="Une autorité externe impose une loi. Le groupe doit décider s'il l'accepte.", trigger_round=5, intensity=PlotTwistIntensity.EXTREME),
+                PlotTwist(id="external_law", name="La Loi Extérieure", description="Une autorité externe impose une loi. Le groupe doit décider s'il l'accepte.", trigger_round=5, intensity=PlotTwistIntensity.STRONG),
             ],
             base_system_prompt=(
                 "Vous êtes dans un groupe sans aucune loi préexistante. "

@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 
 const NAV = [
   { path: "/", label: "Hub", icon: "🏠" },
+  { path: "/settings", label: "Settings", icon: "⚙️" },
 ];
 
 export default function Layout() {

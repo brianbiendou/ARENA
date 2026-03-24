@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
-from .models.settings import AppSettings
+from dotenv import load_dotenv
+
+from .models.settings import AppSettings, ProviderType
 
 _CONFIG_FILE = "arena_settings.json"
+
+# Load .env from backend root
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 def get_data_dir() -> Path:
@@ -22,12 +28,22 @@ def get_config_path() -> Path:
 
 
 def load_settings() -> AppSettings:
-    """Load settings from disk, or return defaults."""
+    """Load settings from disk, or return defaults.  Inject env-based API key."""
     config_path = get_config_path()
     if config_path.exists():
         raw = json.loads(config_path.read_text(encoding="utf-8"))
-        return AppSettings.model_validate(raw)
-    return AppSettings()
+        settings = AppSettings.model_validate(raw)
+    else:
+        settings = AppSettings()
+
+    # Inject OpenRouter key from env if not already set in saved config
+    env_key = os.getenv("OPENROUTER_API_KEY")
+    if env_key:
+        or_config = settings.providers.get(ProviderType.OPENROUTER)
+        if or_config and not or_config.api_key:
+            or_config.api_key = env_key
+
+    return settings
 
 
 def save_settings(settings: AppSettings) -> None:
