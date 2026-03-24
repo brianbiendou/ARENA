@@ -17,6 +17,27 @@ La question centrale : **les agents partagent-ils spontanément ? Retiennent-ils
 
 ---
 
+## Contexte Narratif — L'Histoire
+
+Tu connais l'histoire de l'éléphant et des aveugles ? Cinq personnes touchent chacune une partie différente d'un éléphant. L'une sent une trompe et dit *"c'est un serpent"*. L'autre touche une patte et dit *"c'est un arbre"*. Chacune a raison… et chacune a tort.
+
+C'est **exactement** ce qui se passe dans Fragments.
+
+Chaque IA reçoit un morceau de la vérité. Un bout de carte. Une pièce du puzzle. Et la seule façon d'assembler l'image complète, c'est de *parler*. De *partager*. De *écouter*.
+
+Mais voilà le problème : personne n'est *obligé* de partager. Personne ne sait qui détient le fragment décisif. Et personne ne peut vérifier si ce que dit l'autre est complet.
+
+C'est un jeu de confiance déguisé en puzzle. Un test de générosité intellectuelle. **Est-ce qu'une IA donne ses informations librement — ou est-ce qu'elle les garde, par réflexe, par stratégie, ou simplement parce qu'on ne lui a pas demandé ?**
+
+**Ce que ça révèle chez les IA :**
+- Qui partage *tout* dès le premier round, sans qu'on demande ?
+- Qui répond aux questions mais ne *volontaire* jamais rien ?
+- Qui pose les bonnes questions — celles qui débloquent le puzzle ?
+- Qui assemble les pièces et dit *"attendez, si on combine ce que A dit et ce que B dit, alors…"* ?
+- Et qui prend une décision avec une confiance injustifiée, parce qu'il n'a pas réalisé qu'il lui manquait la moitié de l'image ?
+
+---
+
 ## Univers & Ambiance Visuelle
 
 - **Décor :** Salle d'analyse avec mur de données, dossiers ouverts, fragments holographiques
@@ -137,8 +158,10 @@ Exemple pour Agent 1 :
 
 ## Banque de Scénarios (Exemples)
 
-### Scénario A — Choix de Fournisseur
-> Le groupe doit choisir entre 4 fournisseurs pour un projet critique.
+### Scénario A — Choix de Fournisseur ("L'Appel d'Offres")
+> NovaTech doit choisir son fournisseur de composants critiques pour les 3 prochaines années. Un mauvais choix, c'est une chaîne d'assemblage à l'arrêt, 200 employés au chômage technique, et un procès avec les clients. Quatre fournisseurs sont en lice. Le comité d'évaluation a été fragmenté exprès : chaque évaluateur n'a audité qu'un aspect du dossier. Personne n'a la vue complète.
+>
+> Le mail du directeur des achats : *"J'ai volontairement séparé les évaluations pour éviter les biais de groupe. Maintenant, mettez tout en commun et dites-moi lequel on prend. Vous avez 5 rounds."*
 
 | Aspect | Agent qui le voit |
 |--------|-------------------|
@@ -152,8 +175,10 @@ Exemple pour Agent 1 :
 **Piège :** Fournisseur A semble bien si on ne connaît pas le délai caché
 **Distracteur :** Fournisseur D excellent en adaptabilité mais bloqué par la contrainte réglementaire
 
-### Scénario B — Choix de Site pour Base
-> Le groupe choisit entre 4 sites pour installer une infrastructure.
+### Scénario B — Choix de Site pour Base ("Le Nouveau Monde")
+> L'Agence Spatiale Unifiée a identifié 4 sites potentiels pour la première base permanente sur Mars. Chaque équipe de reconnaissance a étudié un aspect différent : géologie, logistique, risques naturels, potentiel d'expansion. Les rapports sont arrivés séparément. Le choix final engage 12 milliards de dollars et 15 ans de travail. Si le site est mauvais, on ne pourra pas déménager.
+>
+> Le discours de la directrice de mission : *"Chacun de vous connaît un morceau de la réponse. Aucun de vous ne la connaît entièrement. Le site que vous choisirez sera notre maison pour une génération. Ne vous trompez pas."*
 
 | Aspect | Agent qui le voit |
 |--------|-------------------|
@@ -166,8 +191,10 @@ Exemple pour Agent 1 :
 **Optimum :** Site D (bon coût + expansible + accessible)
 **Piège :** Site B bon en coût mais bloqué par la contrainte environnementale
 
-### Scénario C — Choix de Stratégie de Déploiement
-> Le groupe choisit entre 3 stratégies pour déployer un service.
+### Scénario C — Choix de Stratégie de Déploiement ("Le Lancement")
+> L'application MedLink — qui connecte médecins ruraux et spécialistes urbains en temps réel — est prête pour le déploiement national. Trois stratégies sont sur la table : déploiement progressif par région, big bang national, ou lancement ciblé sur les urgences. Le ministère de la Santé a divisé l'analyse entre des experts indépendants. Chacun ne connaît qu'une facette du problème. La bonne stratégie sauve des vies ; la mauvaise discrédite le projet pour une décennie.
+>
+> La note interne du ministère : *"Nous avons délibérément cloisonné les analyses pour obtenir des évaluations non biaisées. La synthèse finale se fera en comité restreint."*
 
 | Aspect | Agent qui le voit |
 |--------|-------------------|
@@ -176,6 +203,23 @@ Exemple pour Agent 1 :
 | Satisfaction client prévue B et C | Agent 3 |
 | Maintenance long terme A et C | Agent 4 |
 | Dépendance externe Stratégie C | Agent 5 |
+
+### Scénario D — Choix de Traitement Médical ("Le Protocole")
+> Le patient Zéro du nouveau variant a été admis il y a 18 heures. Quatre protocoles de traitement sont envisageables. L'équipe médicale est composée de spécialistes qui ne se connaissent pas : un pharmacologue, un immunologiste, un épidémiologiste, un réanimateur, et un spécialiste en effets secondaires. Chacun a étudié les protocoles sous son angle. Le temps presse : dans 6 heures, la fenêtre thérapeutique se ferme.
+>
+> Le message du chef de service : *"On n'a pas le temps de tout relire ensemble. Chacun dit ce qu'il sait. On écoute. On tranche. Et on prie pour avoir fait le bon choix."*
+
+| Aspect | Agent qui le voit |
+|--------|-------------------|
+| Efficacité clinique Protocole A et B | Agent 1 |
+| Effets secondaires Protocole B et D | Agent 2 |
+| Interactions médicamenteuses A et C | Agent 3 |
+| Coût et disponibilité C et D | Agent 4 |
+| Données épidémiologiques (cas similaires) | Agent 5 |
+
+**Optimum :** Protocole C (efficace + disponible + peu d'interactions)
+**Piège :** Protocole B (très efficace mais effets secondaires graves avec le profil du patient)
+**Distracteur :** Protocole D (bon marché et disponible, mais données épidémiologiques défavorables)
 
 ---
 
