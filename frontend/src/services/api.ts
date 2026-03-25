@@ -51,6 +51,11 @@ export const runs = {
       method: "POST",
       body: JSON.stringify(config),
     }),
+  startBatch: (config: RunConfig, numGames: number) =>
+    request<{ message: string; experiment: string; num_games: number }>("/runs/batch", {
+      method: "POST",
+      body: JSON.stringify({ config, num_games: numGames }),
+    }),
   delete: (id: string) => request<{ message: string }>(`/runs/${id}`, { method: "DELETE" }),
   exportUrl: (id: string, fmt: "json" | "csv" | "md") => `${BASE}/runs/${id}/export/${fmt}`,
 };

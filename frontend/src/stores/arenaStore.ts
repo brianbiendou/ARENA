@@ -3,7 +3,7 @@
    ──────────────────────────────────────────── */
 
 import { create } from "zustand";
-import type { Message, RunStatus, Vote, WSEvent } from "../types";
+import type { Message, PhaseType, RunStatus, Vote, WSEvent } from "../types";
 import { arenaSocket } from "../services/ws";
 
 interface ArenaState {
@@ -15,8 +15,8 @@ interface ArenaState {
   agents: string[];
   events: WSEvent[];
 
-  /** Call once to wire up the WebSocket listener. */
-  init: () => () => void;
+  /** Connect WebSocket and subscribe to events — call once at app startup. */
+  initGlobal: () => void;
   reset: () => void;
 }
 
@@ -29,9 +29,11 @@ export const useArenaStore = create<ArenaState>((set) => ({
   agents: [],
   events: [],
 
-  init: () => {
+  initGlobal: () => {
+    console.log("[ArenaStore] initGlobal() called");
     arenaSocket.connect();
-    return arenaSocket.subscribe((event) => {
+    arenaSocket.subscribe((event) => {
+      console.log("[ArenaStore] Processing event:", event.type);
       set((s) => {
         const events = [...s.events, event];
 
@@ -51,7 +53,7 @@ export const useArenaStore = create<ArenaState>((set) => ({
             return { ...s, events, status: event.status as RunStatus };
           case "round_start":
             return { ...s, events, currentRound: event.round };
-          case "agent_message":
+          case "message":
             return {
               ...s,
               events,
@@ -60,15 +62,15 @@ export const useArenaStore = create<ArenaState>((set) => ({
                 {
                   agent_id: event.agent_id,
                   agent_name: event.agent_name,
-                  phase: event.phase,
+                  phase: event.phase as PhaseType,
                   content: event.content,
                   timestamp: new Date().toISOString(),
-                  tokens_used: 0,
-                  response_time_ms: 0,
+                  tokens_used: event.tokens ?? 0,
+                  response_time_ms: event.response_time_ms ?? 0,
                 },
               ],
             };
-          case "agent_vote":
+          case "vote":
             return {
               ...s,
               events,

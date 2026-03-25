@@ -93,10 +93,13 @@ class LMStudioProvider(BaseLLMProvider):
                         yield token
 
     async def list_models(self) -> list[ModelInfo]:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(f"{self.endpoint}/v1/models")
-            resp.raise_for_status()
-            data = resp.json()
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(f"{self.endpoint}/v1/models")
+                resp.raise_for_status()
+                data = resp.json()
+        except (httpx.ConnectError, httpx.TimeoutException):
+            return []
 
         models = []
         for m in data.get("data", []):

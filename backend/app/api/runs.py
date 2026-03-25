@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel, Field
 
 from ..core.engine import ArenaEngine
 from ..models.run import RunConfig, RunResult
@@ -40,6 +41,41 @@ async def start_run(config: RunConfig, request: Request, background_tasks: Backg
 
     background_tasks.add_task(_execute)
     return {"message": "Run started", "experiment": config.experiment.experiment_id.value}
+
+
+class BatchRunRequest(BaseModel):
+    """Request to launch multiple runs of the same config."""
+    config: RunConfig
+    num_games: int = Field(default=1, ge=1, le=20)
+
+
+@router.post("/batch", status_code=201)
+async def start_batch(body: BatchRunRequest, request: Request, background_tasks: BackgroundTasks):
+    """Launch N games in sequence with the same config (different seeds)."""
+    registry = _get_registry(request)
+    ws_manager = request.app.state.ws_manager
+
+    from ..core.seed import SeedManager
+    base_seed = SeedManager(body.config.seed)
+
+    async def _execute_batch():
+        for i in range(body.num_games):
+            cfg = body.config.model_copy(deep=True)
+            cfg.seed = base_seed.next_seed()
+            engine = ArenaEngine(
+                registry=registry,
+                broadcast=ws_manager.broadcast if ws_manager else None,
+            )
+            await ws_manager.broadcast({"type": "batch_progress", "game": i + 1, "total": body.num_games}) if ws_manager else None
+            result = await engine.run(cfg)
+            run_store.save_run(result)
+
+    background_tasks.add_task(_execute_batch)
+    return {
+        "message": f"Batch started: {body.num_games} games",
+        "experiment": body.config.experiment.experiment_id.value,
+        "num_games": body.num_games,
+    }
 
 
 @router.get("/{run_id}")

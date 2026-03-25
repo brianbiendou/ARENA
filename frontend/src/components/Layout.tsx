@@ -1,13 +1,36 @@
+import { useEffect, useRef, useState } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useArenaStore } from "../stores/arenaStore";
+import { arenaSocket } from "../services/ws";
 
 const NAV = [
   { path: "/", label: "Hub", icon: "🏠" },
+  { path: "/history", label: "Historique", icon: "📜" },
   { path: "/settings", label: "Settings", icon: "⚙️" },
 ];
 
 export default function Layout() {
   const location = useLocation();
+  const initGlobal = useArenaStore((s) => s.initGlobal);
+  const initDone = useRef(false);
+  const [wsStatus, setWsStatus] = useState("?");
+
+  // Connect WebSocket AND subscribe to events once at app startup
+  useEffect(() => {
+    if (!initDone.current) {
+      initDone.current = true;
+      console.log("[Layout] Calling initGlobal()");
+      initGlobal();
+    } else {
+      console.log("[Layout] initGlobal() already done, skipping");
+    }
+    // Poll WS status for debug indicator
+    const timer = setInterval(() => {
+      setWsStatus(arenaSocket.connected ? "🟢" : "🔴");
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [initGlobal]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -18,6 +41,7 @@ export default function Layout() {
           <span className="text-xl font-bold tracking-wide text-arena-accent-light group-hover:text-white transition-colors">
             ARENA
           </span>
+          <span className="text-xs ml-2" title="WebSocket status">WS {wsStatus}</span>
         </Link>
 
         <nav className="flex items-center gap-4 text-sm">

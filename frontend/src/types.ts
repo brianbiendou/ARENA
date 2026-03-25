@@ -205,7 +205,11 @@ export interface RunSummary {
 export type WSEvent =
   | { type: "run_start"; run_id: string; experiment: string; agents: string[] }
   | { type: "run_end"; run_id: string; status: string; error?: string }
-  | { type: "round_start"; run_id: string; round: number }
-  | { type: "agent_message"; run_id: string; agent_id: string; agent_name: string; phase: PhaseType; content: string }
-  | { type: "agent_vote"; run_id: string; agent_id: string; agent_name: string; target: string }
+  | { type: "round_start"; round: number; total_rounds: number }
+  | { type: "round_end"; round: number }
+  | { type: "message"; agent_id: string; agent_name: string; phase: string; content: string; tokens?: number; response_time_ms?: number }
+  | { type: "vote"; agent_id: string; agent_name: string; target: string; reasoning?: string }
+  | { type: "agent_status"; agent_id: string; agent_name?: string; status: string }
+  | { type: "phase"; phase: string }
+  | { type: "batch_progress"; game: number; total: number }
   | { type: "event"; round: number; [key: string]: unknown };

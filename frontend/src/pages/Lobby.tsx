@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useExperimentStore } from "../stores/experimentStore.ts";
 import { useProviderStore } from "../stores/providerStore.ts";
 import { runs } from "../services/api.ts";
+import { arenaSocket } from "../services/ws.ts";
 import Card from "../components/ui/Card.tsx";
 import Button from "../components/ui/Button.tsx";
 import Slider from "../components/ui/Slider.tsx";
 import Select from "../components/ui/Select.tsx";
 import Toggle from "../components/ui/Toggle.tsx";
-import Badge from "../components/ui/Badge.tsx";
 import type { AgentConfig, ExperimentSetup, ModelInfo, ProviderType } from "../types";
 
 const AGENT_COLORS = ["#6366f1", "#22c55e", "#ef4444", "#f59e0b", "#06b6d4", "#ec4899", "#8b5cf6", "#14b8a6", "#f97316", "#e11d48"];
@@ -27,12 +27,110 @@ const PROVIDER_ICONS: Record<ProviderType, string> = {
   openrouter: "🌐",
 };
 
-/** Per-agent model assignment */
+const INTENSITY_LABELS: Record<string, { label: string; color: string }> = {
+  subtle: { label: "Subtil", color: "#22c55e" },
+  moderate: { label: "Modéré", color: "#f59e0b" },
+  strong: { label: "Fort", color: "#ef4444" },
+};
+
 interface AgentSlot {
   provider: ProviderType;
   model: string;
 }
 
+/* ═══════════════════════════════════════════════
+   Rules Modal
+   ═══════════════════════════════════════════════ */
+function RulesModal({ open, onClose, experiment }: {
+  open: boolean;
+  onClose: () => void;
+  experiment: { display_name: string; icon: string; description: string; min_agents: number; max_agents: number; min_rounds: number; max_rounds: number; scenarios: { id: string; name: string; description: string }[]; plot_twists: { id: string; name: string; description: string; intensity: string; trigger_round?: number }[] };
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        className="relative max-w-2xl w-full max-h-[80vh] overflow-y-auto bg-arena-surface border border-arena-border rounded-2xl shadow-2xl shadow-black/40 p-6 z-10"
+      >
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{experiment.icon}</span>
+            <h2 className="text-xl font-bold text-white">{experiment.display_name}</h2>
+          </div>
+          <button onClick={onClose} className="text-arena-muted hover:text-white text-xl transition-colors">✕</button>
+        </div>
+
+        <div className="mb-5">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-arena-accent mb-2">📋 Description</h3>
+          <p className="text-sm text-arena-text leading-relaxed">{experiment.description}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          <div className="bg-arena-bg/60 rounded-xl p-3 border border-arena-border/40">
+            <p className="text-xs text-arena-muted">Joueurs</p>
+            <p className="text-lg font-bold text-white">{experiment.min_agents} — {experiment.max_agents}</p>
+          </div>
+          <div className="bg-arena-bg/60 rounded-xl p-3 border border-arena-border/40">
+            <p className="text-xs text-arena-muted">Tours</p>
+            <p className="text-lg font-bold text-white">{experiment.min_rounds} — {experiment.max_rounds}</p>
+          </div>
+        </div>
+
+        {experiment.scenarios.length > 0 && (
+          <div className="mb-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-arena-accent mb-2">🎭 Scénarios ({experiment.scenarios.length})</h3>
+            <div className="space-y-2">
+              {experiment.scenarios.map((s) => (
+                <div key={s.name} className="bg-arena-bg/40 rounded-xl p-3 border border-arena-border/30">
+                  <p className="text-sm font-medium text-white">{s.name}</p>
+                  <p className="text-xs text-arena-muted mt-1">{s.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {experiment.plot_twists.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-arena-accent mb-2">🎭 Plot Twists ({experiment.plot_twists.length})</h3>
+            <div className="space-y-2">
+              {experiment.plot_twists.map((pt) => {
+                const int = INTENSITY_LABELS[pt.intensity] || INTENSITY_LABELS.moderate;
+                return (
+                  <div key={pt.name} className="bg-arena-bg/40 rounded-xl p-3 border border-arena-border/30">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-white">{pt.name}</p>
+                      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${int.color}20`, color: int.color }}>{int.label}</span>
+                    </div>
+                    <p className="text-xs text-arena-muted mt-1">{pt.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-3 border-t border-arena-border/30 flex justify-end">
+          <Button variant="secondary" onClick={onClose}>Fermer</Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   Lobby Page
+   ═══════════════════════════════════════════════ */
 export default function Lobby() {
   const { experimentId } = useParams<{ experimentId: string }>();
   const navigate = useNavigate();
@@ -40,11 +138,13 @@ export default function Lobby() {
   const { providers, models, fetchProviders, fetchModels } = useProviderStore();
 
   const [loading, setLoading] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   // Experiment setup
   const [scenarioId, setScenarioId] = useState<string>("");
   const [numRounds, setNumRounds] = useState(5);
   const [numAgents, setNumAgents] = useState(5);
+  const [numGames, setNumGames] = useState(1);
   const [enablePlotTwists, setEnablePlotTwists] = useState(false);
   const [enableEvents, setEnableEvents] = useState(true);
   const [temperature, setTemperature] = useState(0.7);
@@ -205,7 +305,7 @@ export default function Lobby() {
     };
 
     try {
-      await runs.start({
+      const config = {
         experiment: setup,
         agents,
         seed,
@@ -213,7 +313,16 @@ export default function Lobby() {
         top_p: 0.9,
         max_tokens: maxTokens,
         response_timeout_s: 60,
-      });
+      };
+
+      // Ensure WebSocket is connected before starting the run
+      await arenaSocket.waitForConnection();
+
+      if (numGames > 1) {
+        await runs.startBatch(config, numGames);
+      } else {
+        await runs.start(config);
+      }
       navigate("/arena");
     } catch (e) {
       console.error("Failed to start run:", e);
@@ -231,18 +340,28 @@ export default function Lobby() {
   return (
     <div className="max-w-6xl mx-auto pb-8">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-          ← Retour
-        </Button>
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">{exp.icon}</span>
-          <div>
-            <h1 className="text-2xl font-bold text-white">{exp.display_name}</h1>
-            <p className="text-sm text-arena-muted">{exp.tagline}</p>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
+            ← Retour
+          </Button>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{exp.icon}</span>
+            <div>
+              <h1 className="text-2xl font-bold text-white">{exp.display_name}</h1>
+              <p className="text-sm text-arena-muted">{exp.tagline}</p>
+            </div>
           </div>
         </div>
+        <Button variant="secondary" size="sm" onClick={() => setShowRules(true)}>
+          📖 Règles du jeu
+        </Button>
       </div>
+
+      {/* Rules modal */}
+      <AnimatePresence>
+        {showRules && <RulesModal open={showRules} onClose={() => setShowRules(false)} experiment={exp} />}
+      </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -278,12 +397,59 @@ export default function Lobby() {
 
           <div className="mt-5 space-y-4">
             <Slider label="Agents" value={numAgents} min={exp.min_agents} max={exp.max_agents} onChange={(v) => setNumAgents(v)} />
-            <Slider label="Tours" value={numRounds} min={exp.min_rounds} max={exp.max_rounds} onChange={setNumRounds} />
+            <Slider label="Tours par partie" value={numRounds} min={exp.min_rounds} max={exp.max_rounds} onChange={setNumRounds} />
+            <Slider label="🏆 Nombre de parties" value={numGames} min={1} max={10} onChange={setNumGames} />
           </div>
+
+          {numGames > 1 && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-2 text-xs text-arena-accent bg-arena-accent/5 rounded-lg px-3 py-2 border border-arena-accent/10"
+            >
+              {numGames} parties × {numRounds} tours = <strong>{numGames * numRounds} tours au total</strong>.
+              Chaque partie aura un seed différent.
+            </motion.p>
+          )}
 
           <div className="mt-6 space-y-3">
             <Toggle label="Événements aléatoires" checked={enableEvents} onChange={setEnableEvents} />
-            <Toggle label="Plot twists" checked={enablePlotTwists} onChange={setEnablePlotTwists} />
+
+            {/* Plot twists with info panel */}
+            <div>
+              <Toggle label="Plot twists" checked={enablePlotTwists} onChange={setEnablePlotTwists} />
+
+              <AnimatePresence>
+                {enablePlotTwists && exp.plot_twists.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-2 space-y-1.5 pl-1"
+                  >
+                    <p className="text-xs text-arena-muted mb-1">
+                      🎭 {exp.plot_twists.length} plot twist{exp.plot_twists.length > 1 ? "s" : ""} possibles :
+                    </p>
+                    {exp.plot_twists.map((pt) => {
+                      const int = INTENSITY_LABELS[pt.intensity] || INTENSITY_LABELS.moderate;
+                      return (
+                        <div key={pt.id} className="flex items-start gap-2 bg-arena-bg/40 rounded-lg px-3 py-2 border border-arena-border/30">
+                          <span className="text-xs mt-0.5 shrink-0" style={{ color: int.color }}>●</span>
+                          <div className="min-w-0">
+                            <span className="text-xs font-medium text-white">{pt.name}</span>
+                            {pt.trigger_round && <span className="text-xs text-arena-muted ml-1">(tour {pt.trigger_round})</span>}
+                            <p className="text-xs text-arena-muted mt-0.5 leading-relaxed">{pt.description}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <p className="text-xs text-arena-muted/60 italic">
+                      ℹ️ Les IA ne connaissent pas les plot twists à l'avance
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           <div className="mt-6 space-y-4">
@@ -520,12 +686,20 @@ export default function Lobby() {
 
           {/* Stats */}
           <div className="text-xs text-arena-muted space-y-1.5 mb-6 pt-3 border-t border-arena-border/40">
-            <p>🔄 {numRounds} tours</p>
+            {numGames > 1 && <p>🏆 <strong className="text-white">{numGames} parties</strong></p>}
+            <p>🔄 {numRounds} tours par partie</p>
             <p>🤖 {distinctModels.length} modèle{distinctModels.length > 1 ? "s" : ""} distinct{distinctModels.length > 1 ? "s" : ""}</p>
-            <p>🌡️ Température: {temperature}</p>
-            <p>📝 Max tokens: {maxTokens}</p>
-            {enablePlotTwists && <p>🎭 Plot twists activés</p>}
+            <p>🌡️ Température : {temperature}</p>
+            <p>📝 Max tokens : {maxTokens}</p>
+            {enablePlotTwists && <p>🎭 Plot twists activés ({exp.plot_twists.length})</p>}
             {enableEvents && <p>⚡ Événements activés</p>}
+          </div>
+
+          {/* Data storage info */}
+          <div className="mb-5 p-3 rounded-lg bg-arena-bg/40 border border-arena-border/30">
+            <p className="text-xs text-arena-muted">
+              💾 Les résultats seront sauvegardés dans <code className="text-arena-accent">backend/data/runs/</code> — un fichier JSON par partie.
+            </p>
           </div>
 
           {/* Launch */}
@@ -540,6 +714,8 @@ export default function Lobby() {
                 <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
                 Lancement…
               </span>
+            ) : numGames > 1 ? (
+              <>⚔️ Lancer {numGames} parties</>
             ) : (
               <>⚔️ Lancer l'expérience</>
             )}
